@@ -16,10 +16,16 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        env:
+          DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          DH_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          # Strip any accidental whitespace/newlines from the secrets before
+          # using them — this is what causes "malformed HTTP Authorization
+          # header" even when the secret looks correct in the GitHub UI.
+          CLEAN_USER=$(printf '%s' "$DH_USER" | tr -d '[:space:]')
+          CLEAN_TOKEN=$(printf '%s' "$DH_TOKEN" | tr -d '[:space:]')
+          echo "$CLEAN_TOKEN" | docker login -u "$CLEAN_USER" --password-stdin
 
       - name: Build and push
         uses: docker/build-push-action@v6
